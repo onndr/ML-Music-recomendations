@@ -1,22 +1,7 @@
-
-
-class TargetModel:
-    def __init__(self):
-        pass
-
-    def fit(self):
-        pass
-
-    def predict(self):
-        pass
-
-
-
-
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import GRU, Dense, Embedding
+from tensorflow.keras.layers import Embedding, GRU, Dense
 
 # Generate sample data (replace this with your actual data)
 sessions = [[1, 2, 3, 4],
@@ -43,17 +28,17 @@ embedding_dim = 50
 
 model = Sequential([
     Embedding(input_dim=len(unique_items), output_dim=embedding_dim, input_length=max_sequence_length),
-    GRU(100, activation='tanh', input_shape=(max_sequence_length, embedding_dim), unroll=True),
+    GRU(100, activation='tanh', input_shape=(max_sequence_length, embedding_dim), unroll=True, return_sequences=True),
     Dense(len(unique_items), activation='softmax')
 ])
 
 model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
 # Train the model
-model.fit(padded_input_sequences, np.argmax(padded_target_items, axis=-1), epochs=10, batch_size=2)
+model.fit(padded_input_sequences, padded_target_items, epochs=10, batch_size=2)
 
 # Make predictions for a new session
-new_session = [[1, 3, 4]]
+new_session = np.array([[1, 3, 4]])
 padded_new_session = tf.keras.preprocessing.sequence.pad_sequences(new_session, padding='post', maxlen=max_sequence_length)
 predictions = model.predict(padded_new_session)
 
