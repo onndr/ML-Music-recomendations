@@ -19,31 +19,36 @@ sequences = [[item_to_index[item] for item in session] for session in sessions]
 input_sequences = [seq[:-1] for seq in sequences]
 target_items = [seq[1:] for seq in sequences]
 
+padding_value = len(unique_items)
+
 max_sequence_length = max(len(seq) for seq in input_sequences)
-padded_input_sequences = tf.keras.preprocessing.sequence.pad_sequences(input_sequences, padding='post')
-padded_target_items = tf.keras.preprocessing.sequence.pad_sequences(target_items, padding='post')
+padded_input_sequences = tf.keras.preprocessing.sequence.pad_sequences(input_sequences, padding='post', value=padding_value)
+padded_target_items = tf.keras.preprocessing.sequence.pad_sequences(target_items, padding='post', value=padding_value)
 
 # Build the GRU4Rec model
 embedding_dim = 50
 
 model = Sequential([
-    Embedding(input_dim=len(unique_items), output_dim=embedding_dim, input_length=max_sequence_length),
+    Embedding(input_dim=len(unique_items)+1, output_dim=embedding_dim, input_length=max_sequence_length),
     GRU(100, activation='tanh', input_shape=(max_sequence_length, embedding_dim), unroll=True, return_sequences=True),
-    Dense(len(unique_items), activation='softmax')
+    Dense(len(unique_items)+1, activation='softmax')
 ])
 
 model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
 # Train the model
-model.fit(padded_input_sequences, padded_target_items, epochs=10, batch_size=2)
+# TODO: CHANGE TARGET ITEMS TO PADDED TARGET ITEMS
+model.fit(padded_input_sequences, np.array(target_items), epochs=15, batch_size=3)
 
 # Make predictions for a new session
-new_session = np.array([[1, 3, 4]])
+new_session = np.array([[2, 3]])
 padded_new_session = tf.keras.preprocessing.sequence.pad_sequences(new_session, padding='post', maxlen=max_sequence_length)
 predictions = model.predict(padded_new_session)
-
+print(predictions)
+# TODO: CHANGE PREDICTED ITEMS TO LIST OF PREDICTED ITEMS
 # Convert predictions to item indices
-predicted_items = [np.argmax(pred) for pred in predictions[0]]
+# TODO: CHOOSE CORRECT SET OF PREDICTIONS
+predicted_items = np.argsort(predictions[0])[::-1][:3]
 
 # Convert item indices to actual items
 recommended_items = [index_to_item[index] for index in predicted_items]
