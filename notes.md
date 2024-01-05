@@ -18,4 +18,4 @@ Wejście modelu: N ostatnich akcji użytkownika - traktujemy sesje użytkownika 
 2. Gru4Rec?
 3. Czy metryki opisane w etapie 1
 4. strojenie parametrów
-5.
+5. popularity wysokie to dobrze czy niskie?
