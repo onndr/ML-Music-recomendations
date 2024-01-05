@@ -2,6 +2,10 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Embedding, GRU, Dense
+from tensorflow.keras.layers import Input, Concatenate
+from tensorflow.keras.models import Model
+
+from src.data_prep.datapreprocessing import load_data, preprocess_sessions, preprocess_tracks, preprocess_users
 
 
 class TargetModel:
@@ -21,12 +25,13 @@ class TargetModel:
         self.model.compile(loss=self.loss, optimizer=self.optimizer, metrics=['accuracy'])
 
     def train(self, input_sequences, target_items, epochs=50, batch_size=3):
-        self.model.fit(input_sequences, np.array(target_items), epochs=epochs, batch_size=batch_size)
+        self.model.fit(input_sequences, target_items, epochs=epochs, batch_size=batch_size)
 
     def predict(self, input_sequence):
         predictions = self.model.predict(input_sequence)
         predicted_items = [pred[::-1] for pred in np.argsort(predictions[0])]
-        return predicted_items
+        predicted_items_last_step = predicted_items[-1]
+        return predicted_items_last_step
 
     def save(self, path):
         self.model.save(path)
@@ -36,10 +41,16 @@ class TargetModel:
 
 
 # Generate sample data (replace this with your actual data)
-sessions = [[1, 2, 3, 4],
-            [2, 3, 5],
-            [1, 4, 5, 6],
-            [3, 5, 6, 7]]
+sessions = [[1, 1, 2, 6],
+            [1, 2, 3, 4],
+            [2, 1, 2],
+            [5, 1, 2, 6],
+            [5, 1, 2, 6],
+            [5, 1, 2, 6],
+            [5, 1, 2, 6],
+            [5, 1, 2, 6],
+            [5, 1, 2, 6],
+            [5, 1, 2, 6]]
 
 unique_items = list(set(item for session in sessions for item in session))
 item_to_index = {item: i for i, item in enumerate(unique_items, 1)}
@@ -65,16 +76,11 @@ model.build_model(input_dim=len(unique_items)+1, output_dim=len(unique_items)+1,
 model.train(padded_input_sequences, padded_target_items, epochs=50, batch_size=3)
 
 # Make predictions for a new session
-new_session = np.array([[1, 5]])
+new_session = np.array([[1, 3]])
 padded_new_session = tf.keras.preprocessing.sequence.pad_sequences(new_session, padding='post', maxlen=max_sequence_length)
 predicted_items = model.predict(padded_new_session)
-print("Padded input session: ", padded_new_session)
-# Convert predictions to item indices
-
-predicted_items_last_step = predicted_items[-1]
 
 # Convert item indices to actual items
-# recommended_items = [[index_to_item[index] for index in pred_arr if index != padding_value] for pred_arr in predicted_items]
-recommended_items = [index_to_item[index] for index in predicted_items_last_step if index != padding_value]
+recommended_items = [index_to_item[index] for index in predicted_items if index != padding_value]
 
 print("Recommended Items:", recommended_items)
