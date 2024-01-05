@@ -9,3 +9,11 @@ Wejście modelu: N ostatnich akcji użytkownika - traktujemy sesje użytkownika 
 4. W przypadku analitycznego – nie wiadomo co to jest “niedaleka przyszłość”
 
 5. jaka zależność między proponowanym wejściem, a wyjściem modelu?
+
+
+
+
+
+1. Model nie biorący pod uwagę użytkownika ani utworów
+2. Gru4Rec?
+3. 
