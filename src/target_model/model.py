@@ -3,6 +3,38 @@ import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Embedding, GRU, Dense
 
+
+class TargetModel:
+    def __init__(self, embedding_dim=50, gru_units=100, optimizer='adam', loss='sparse_categorical_crossentropy'):
+        self.embedding_dim = embedding_dim
+        self.gru_units = gru_units
+        self.optimizer = optimizer
+        self.loss = loss
+        self.model = None
+
+    def build_model(self, input_dim, output_dim, max_sequence_length):
+        self.model = Sequential([
+            Embedding(input_dim=input_dim, output_dim=self.embedding_dim, input_length=max_sequence_length, mask_zero=True),
+            GRU(self.gru_units, activation='tanh', input_shape=(max_sequence_length, self.embedding_dim), unroll=True, return_sequences=True),
+            Dense(output_dim, activation='softmax')
+        ])
+        self.model.compile(loss=self.loss, optimizer=self.optimizer, metrics=['accuracy'])
+
+    def train(self, input_sequences, target_items, epochs=50, batch_size=3):
+        self.model.fit(input_sequences, np.array(target_items), epochs=epochs, batch_size=batch_size)
+
+    def predict(self, input_sequence):
+        predictions = self.model.predict(input_sequence)
+        predicted_items = [pred[::-1] for pred in np.argsort(predictions[0])]
+        return predicted_items
+
+    def save(self, path):
+        self.model.save(path)
+
+    def load(self, path):
+        self.model = tf.keras.models.load_model(path)
+
+
 # Generate sample data (replace this with your actual data)
 sessions = [[1, 2, 3, 4],
             [2, 3, 5],
@@ -26,29 +58,18 @@ padded_input_sequences = tf.keras.preprocessing.sequence.pad_sequences(input_seq
 padded_target_items = tf.keras.preprocessing.sequence.pad_sequences(target_items, padding='post', value=padding_value)
 
 # Build the GRU4Rec model
-embedding_dim = 50
-
-model = Sequential([
-    Embedding(input_dim=len(unique_items)+1, output_dim=embedding_dim, input_length=max_sequence_length, mask_zero=True),
-    GRU(100, activation='tanh', input_shape=(max_sequence_length, embedding_dim), unroll=True, return_sequences=True),
-    Dense(len(unique_items)+1, activation='softmax')
-])
-
-model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+model = TargetModel(embedding_dim=50, gru_units=100, optimizer='adam', loss='sparse_categorical_crossentropy')
+model.build_model(input_dim=len(unique_items)+1, output_dim=len(unique_items)+1, max_sequence_length=max_sequence_length)
 
 # Train the model
-# TODO: CHANGE TARGET ITEMS TO PADDED TARGET ITEMS
-model.fit(padded_input_sequences, np.array(padded_target_items), epochs=50, batch_size=3)
+model.train(padded_input_sequences, padded_target_items, epochs=50, batch_size=3)
 
 # Make predictions for a new session
 new_session = np.array([[1, 5]])
 padded_new_session = tf.keras.preprocessing.sequence.pad_sequences(new_session, padding='post', maxlen=max_sequence_length)
-predictions = model.predict(padded_new_session)
+predicted_items = model.predict(padded_new_session)
 print("Padded input session: ", padded_new_session)
-# TODO: CHANGE PREDICTED ITEMS TO LIST OF PREDICTED ITEMS
 # Convert predictions to item indices
-# TODO: CHOOSE CORRECT SET OF PREDICTIONS
-predicted_items = [pred[::-1] for pred in np.argsort(predictions[0])[:padded_new_session.shape[1]]]
 
 predicted_items_last_step = predicted_items[-1]
 
