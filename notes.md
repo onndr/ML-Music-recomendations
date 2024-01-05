@@ -16,4 +16,6 @@ Wejście modelu: N ostatnich akcji użytkownika - traktujemy sesje użytkownika 
 
 1. Model nie biorący pod uwagę użytkownika ani utworów
 2. Gru4Rec?
-3. 
+3. Czy metryki opisane w etapie 1
+4. strojenie parametrów
+5.
