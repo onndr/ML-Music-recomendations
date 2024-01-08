@@ -5,7 +5,7 @@ from tensorflow.keras.layers import Embedding, GRU, Dense
 from tensorflow.keras.layers import Input, Concatenate
 from tensorflow.keras.models import Model
 
-from src.data_prep.datapreprocessing import load_data, preprocess_sessions, preprocess_tracks, preprocess_users
+from src.data_prep.datapreprocessing import load_data
 
 
 class TargetModel:

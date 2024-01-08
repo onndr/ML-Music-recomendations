@@ -17,14 +17,16 @@ def save_data(data: pd.DataFrame, path):
 
 def preprocess_sessions_group_by_session_id(sessions_df):
     sessions_df = clean_sessions(sessions_df)
-    # sort by timestamp
-    sessions_df = sessions_df.sort_values('timestamp', ascending=True)
     # group by session_id and aggregate values in lists
     sessions_df = sessions_df.groupby('session_id').agg(list).reset_index()
     # we dont need a list of the same user_id repeated for each track_id
     sessions_df['user_id'] = sessions_df['user_id'].apply(lambda x: x[0])
+    # sort by timestamp and user_id
+    sessions_df = sessions_df.sort_values(by=['user_id', 'timestamp'],
+                                          key=lambda col: col.str[0] if col.name == 'timestamp' else col,
+                                          ascending=True)
     # rename track_id column
-    sessions_df = sessions_df.rename(columns={'track_id': 'tracks_ids'})
+    sessions_df = sessions_df.rename(columns={'track_id': 'tracks_ids', 'timestamp': 'timestamps'})
     # add length of each session
     sessions_df['session_length'] = sessions_df['tracks_ids'].apply(lambda x: len(x))
     # get max session length
@@ -43,7 +45,7 @@ def preprocess_sessions_group_by_user_id(sessions_df):
     # remove session_id column
     sessions_df = sessions_df.drop('session_id', axis=1)
     # rename track_id and session_id columns
-    sessions_df = sessions_df.rename(columns={'track_id': 'tracks_ids'})
+    sessions_df = sessions_df.rename(columns={'track_id': 'tracks_ids', 'timestamp': 'timestamps'})
     # add length of each user history
     sessions_df['history_length'] = sessions_df['tracks_ids'].apply(lambda x: len(x))
     # get max history length
@@ -73,4 +75,4 @@ def transform_sessions_continuous():
 
 if __name__ == '__main__':
     transform_sessions_discrete()
-    transform_sessions_continuous()
+    # transform_sessions_continuous()
