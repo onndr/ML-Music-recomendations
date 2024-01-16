@@ -3,6 +3,8 @@ from surprise.model_selection import train_test_split
 
 from src.data_prep.datapreprocessing import load_data, save_data
 
+import pickle
+
 
 def prep_data():
     # Load data
@@ -17,7 +19,6 @@ def prep_data():
 
     save_data(df, "../../data/listened_tracks.jsonl")
     return df
-
 
 
 df = load_data("../../data/listened_tracks.jsonl")
@@ -39,7 +40,8 @@ accuracy.rmse(predictions)
 accuracy.mae(predictions)
 
 # If you have a binary rating system
-correct_predictions = sum([1 for prediction in predictions if (prediction.r_ui > 0.5 and prediction.est > 0.5) or (prediction.r_ui <= 0.5 and prediction.est <= 0.5)])
+correct_predictions = sum([1 for prediction in predictions if (prediction.r_ui > 0.5 and prediction.est > 0.5) or (
+            prediction.r_ui <= 0.5 and prediction.est <= 0.5)])
 accuracy_percentage = (correct_predictions / len(predictions)) * 100
 print(f'Accuracy: {accuracy_percentage}%')
 
@@ -50,3 +52,9 @@ import json
 with open('predictions.json', 'w') as f:
     json.dump(predictions, f)
 
+# Save the trained model as a pickle string.
+saved_model = pickle.dumps(model)
+
+# Save the pickled model to a file
+with open('svd_model.pkl', 'wb') as file:
+    file.write(saved_model)
