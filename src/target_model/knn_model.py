@@ -2,25 +2,33 @@ import pandas as pd
 from sklearn.neighbors import NearestNeighbors
 from sklearn.preprocessing import StandardScaler
 
-def load_data(path):
+
+def load_data(path: str):
     return pd.read_json(path, lines=True)
+
+
+def avg_song(songs: pd.DataFrame):
+    return songs.mean(numeric_only=True).to_frame().transpose()
+
 
 # 1. Load song data
 songs = load_data('data/tracks.jsonl')
-songs_attrs = [ "id",
-                "popularity",
-                "duration_ms",
-                "explicit",
-                "danceability",
-                "energy",
-                "key",
-                "loudness",
-                "speechiness",
-                "acousticness",
-                "instrumentalness", 
-                "liveness",
-                "valence",
-                "tempo"]
+songs_attrs = [
+    "id",
+    "popularity",
+    "duration_ms",
+    "explicit",
+    "danceability",
+    "energy",
+    "key",
+    "loudness",
+    "speechiness",
+    "acousticness",
+    "instrumentalness",
+    "liveness",
+    "valence",
+    "tempo"
+]
 songs_corr = songs[songs_attrs]
 songs_corr = songs_corr.set_index("id")
 scaler = StandardScaler().fit(songs_corr)
@@ -41,4 +49,3 @@ distances, indices = knn.kneighbors(coldplay_yellow)
 for i in indices[0]:
     print(songs.iloc[i]['name'])
 recommended_songs = songs.iloc[indices[0]]
-print(recommended_songs)
