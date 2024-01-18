@@ -1,4 +1,4 @@
-from datapreprocessing import load_data
+from src.data_prep.datapreprocessing import load_data
 from datetime import datetime
 
 import pandas as pd
@@ -8,19 +8,26 @@ def avg_song(songs: pd.DataFrame):
     return songs.mean(numeric_only=True).to_frame().transpose()
 
 
-def get_n_last_songs_of_user_by_timestamp(songs_df: pd.DataFrame, user_id: int, n: int, timestamp: pd.Timestamp):
-    user_songs = songs_df[songs_df['user_id'] == user_id]
+def get_n_last_songs_of_user_by_timestamp(sessions_df: pd.DataFrame, user_id: int, n: int, timestamp: pd.Timestamp):
+    user_songs = sessions_df[sessions_df['user_id'] == user_id]
     user_songs = user_songs[user_songs['timestamp'] <= timestamp]
     user_songs = user_songs.sort_values(by=['timestamp'], ascending=False)
     return user_songs[['track_id']][:n]
 
 
-def get_songs_by_ids(songs_df: pd.DataFrame, songs_ids: list):
+def get_n_next_songs_of_user_by_timestamp(sessions_df: pd.DataFrame, user_id: int, n: int, timestamp: pd.Timestamp):
+    user_songs = sessions_df[sessions_df['user_id'] == user_id]
+    user_songs = user_songs[user_songs['timestamp'] >= timestamp]
+    user_songs = user_songs.sort_values(by=['timestamp'], ascending=True)
+    return user_songs[['track_id']][:n]
+
+
+def get_songs_params_by_ids(songs_df: pd.DataFrame, songs_ids: list):
     return songs_df[songs_df['id'].isin(songs_ids)]
 
 
-def prepare_songs_df():
-    songs = load_data('data/tracks.jsonl')
+def prepare_songs_df(path: str = 'data/tracks.jsonl'):
+    songs = load_data(path)
     songs_attrs = [
         "id",
         "popularity",
@@ -49,7 +56,7 @@ def main():
 
     last_songs = get_n_last_songs_of_user_by_timestamp(sessions_df, USER_ID, N, DATE)
     songs_corr = prepare_songs_df()
-    selected_songs_df = get_songs_by_ids(songs_corr, last_songs['track_id'].tolist())
+    selected_songs_df = get_songs_params_by_ids(songs_corr, last_songs['track_id'].tolist())
 
     avg = avg_song(selected_songs_df)
     print(avg)

@@ -7,10 +7,6 @@ def load_data(path: str):
     return pd.read_json(path, lines=True)
 
 
-def avg_song(songs: pd.DataFrame):
-    return songs.mean(numeric_only=True).to_frame().transpose()
-
-
 # 1. Load song data
 songs = load_data('data/tracks.jsonl')
 songs_attrs = [
