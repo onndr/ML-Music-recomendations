@@ -44,25 +44,87 @@ class KNNModel:
         self.scaler = scaler
 
 
-def load_data(path):
+def load_data(path: str):
     return pd.read_json(path, lines=True)
+
+
+def avg_song(songs: pd.DataFrame):
+    return songs.mean(numeric_only=True).to_frame().transpose()
+
 
 # 1. Load song data
 songs = load_data('data/tracks.jsonl')
-songs_attrs = [ "id",
-                "popularity",
-                "duration_ms",
-                "explicit",
-                "danceability",
-                "energy",
-                "key",
-                "loudness",
-                "speechiness",
-                "acousticness",
-                "instrumentalness", 
-                "liveness",
-                "valence",
-                "tempo"]
+songs_attrs = [
+    "id",
+    "popularity",
+    "duration_ms",
+    "explicit",
+    "danceability",
+    "energy",
+    "key",
+    "loudness",
+    "speechiness",
+    "acousticness",
+    "instrumentalness", 
+    "liveness",
+    "valence",
+    "tempo"
+]
+
+class KNNModel:
+    
+    def __init__(self):
+        self.model = None
+        self.scaler = None
+        self.attributes_list = None
+        self.index= None
+        self.all_songs = None
+
+    def fit(self, songs_normalized):
+        print("Start fitting")
+        knn = NearestNeighbors(n_neighbors=10)
+        knn.fit(songs_normalized)
+        print("Finished fitting")
+        self.model = knn
+
+    def data_process(self, all_songs, attributes_list = songs_attrs_global, index = "id"):
+        self.all_songs = all_songs
+        self.index = index
+        self.attributes_list = attributes_list
+        songs_corr = self.all_songs[self.attributes_list]
+        songs_corr = songs_corr.set_index(self.index)
+        scaler = StandardScaler().fit(songs_corr)
+        songs_normalized = scaler.transform(songs_corr)
+        self.scaler = scaler
+
+
+
+def load_data(path: str):
+    return pd.read_json(path, lines=True)
+
+
+def avg_song(songs: pd.DataFrame):
+    return songs.mean(numeric_only=True).to_frame().transpose()
+
+
+# 1. Load song data
+songs = load_data('data/tracks.jsonl')
+songs_attrs = [
+    "id",
+    "popularity",
+    "duration_ms",
+    "explicit",
+    "danceability",
+    "energy",
+    "key",
+    "loudness",
+    "speechiness",
+    "acousticness",
+    "instrumentalness",
+    "liveness",
+    "valence",
+    "tempo"
+]
 songs_corr = songs[songs_attrs]
 songs_corr = songs_corr.set_index("id")
 scaler = StandardScaler().fit(songs_corr)
@@ -83,4 +145,3 @@ distances, indices = knn.kneighbors(coldplay_yellow)
 for i in indices[0]:
     print(songs.iloc[i]['name'])
 recommended_songs = songs.iloc[indices[0]]
-print(recommended_songs)
