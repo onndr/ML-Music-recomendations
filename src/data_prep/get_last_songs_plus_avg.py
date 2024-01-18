@@ -15,15 +15,11 @@ def get_n_last_songs_of_user_by_timestamp(songs_df: pd.DataFrame, user_id: int, 
     return user_songs[['track_id']][:n]
 
 
-def main():
-    N = 10
-    USER_ID = 101
-    DATE = pd.Timestamp(datetime(2023, 10, 4, 2, 38, 38))
-    print(DATE)
-    df = load_data("data/sessions_clean.jsonl")
+def get_songs_by_ids(songs_df: pd.DataFrame, songs_ids: list):
+    return songs_df[songs_df['id'].isin(songs_ids)]
 
-    last_songs = get_n_last_songs_of_user_by_timestamp(df, USER_ID, N, DATE)
 
+def prepare_songs_df():
     songs = load_data('data/tracks.jsonl')
     songs_attrs = [
         "id",
@@ -41,9 +37,21 @@ def main():
         "valence",
         "tempo"
     ]
-    songs_corr = songs[songs_attrs]
-    merge = pd.merge(last_songs, songs_corr, left_on='track_id', right_on='id')
-    avg = avg_song(merge)
+    return songs[songs_attrs]
+
+
+def main():
+    N = 10
+    USER_ID = 101
+    DATE = pd.Timestamp(datetime(2023, 10, 4, 2, 38, 38))
+    print(DATE)
+    sessions_df = load_data("data/sessions_clean.jsonl")
+
+    last_songs = get_n_last_songs_of_user_by_timestamp(sessions_df, USER_ID, N, DATE)
+    songs_corr = prepare_songs_df()
+    selected_songs_df = get_songs_by_ids(songs_corr, last_songs['track_id'].tolist())
+
+    avg = avg_song(selected_songs_df)
     print(avg)
 
 
