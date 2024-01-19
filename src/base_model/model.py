@@ -6,7 +6,7 @@ class MostPopularTracksModel:
     def __init__(self):
         self._dataset = None
 
-    def train(self, tracks_dataset, n_to_hold=10):
+    def train(self, tracks_dataset, n_to_hold=100):
         self._dataset = tracks_dataset
         self._dataset.sort_values(by='popularity', ascending=False, inplace=True)
         self._dataset = self._dataset[:n_to_hold]
@@ -48,7 +48,7 @@ class MostListenedTracksModel:
     def predict(self, genres, n_tracks=10):
         # get the tracks with the highest count for the given genres
         top_tracks = self.counts_df.loc[self.counts_df['genre'].isin(genres)].nlargest(n_tracks, columns='count')
-        return top_tracks
+        return top_tracks['track_id'].tolist()
 
     def save(self, path_genre_track_counts):
         if self.counts_df is not None:
@@ -126,10 +126,10 @@ def main():
     N_TRACKS_PER_GENRE = 10
     GENRES = ['rock', 'pop punk']
 
-    test_most_popular_tracks_model_train(TRACKS_PATH, MOST_POPULAR_MODEL_PATH, N_POPULAR_TRACKS_TO_SAVE, N_TRACKS_TO_PREDICT)
+    # test_most_popular_tracks_model_train(TRACKS_PATH, MOST_POPULAR_MODEL_PATH, N_POPULAR_TRACKS_TO_SAVE, N_TRACKS_TO_PREDICT)
     test_most_popular_tracks_model_load(MOST_POPULAR_MODEL_PATH, N_TRACKS_TO_PREDICT)
-    test_most_listened_tracks_model_train(SESSIONS_PATH, CLEAN_SESSIONS_PATH, USERS_PATH, MOST_LISTENED_MODEL_PATH,
-                                          N_TRACKS_PER_GENRE, GENRES)
+    # test_most_listened_tracks_model_train(SESSIONS_PATH, CLEAN_SESSIONS_PATH, USERS_PATH, MOST_LISTENED_MODEL_PATH,
+    #                                       N_TRACKS_PER_GENRE, GENRES)
     test_most_listened_tracks_model_load(MOST_LISTENED_MODEL_PATH, GENRES)
 
 
