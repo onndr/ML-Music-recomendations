@@ -19,23 +19,26 @@ songs_attrs_global = [
     "tempo"
 ]
 
+
 class KNNModel:
 
     def __init__(self):
         self.model = None
         self.scaler = None
         self.attributes_list = None
-        self.index= None
+        self.index = None
         self.all_songs = None
+        self.n = None
 
-    def fit(self, songs_normalized, n_neighbors = 10):
+    def fit(self, songs_normalized, n_neighbors=10):
         print("Start fitting")
-        knn = NearestNeighbors(n_neighbors= n_neighbors)
+        self.n = n_neighbors
+        knn = NearestNeighbors(n_neighbors=n_neighbors)
         knn.fit(songs_normalized)
         print("Finished fitting")
         self.model = knn
 
-    def fit_data_preprocessor(self, all_songs, attributes_list = songs_attrs_global, index = "id"):
+    def fit_data_preprocessor(self, all_songs, attributes_list=songs_attrs_global, index="id"):
         self.all_songs = all_songs
         self.index = index
         self.attributes_list = attributes_list
@@ -66,19 +69,22 @@ class KNNModel:
         recommended_songs = self.all_songs.iloc[indices[0]]
         return recommended_songs
 
+
 if __name__ == "__main__":
 
     knn_model = KNNModel()
     songs = knn_model.load_data('data/tracks.jsonl')
     songs_after_preprocessing = knn_model.fit_data_preprocessor(songs)
     knn_model.fit(songs_after_preprocessing)
-    coldplay_yellow = {"id": "4gzpq5DPGxSnKTe4SA8HAU", "popularity": 86, "duration_ms": 266773, "explicit": 0, "danceability": 0.429, "energy": 0.661, "key": 11, "loudness": -7.227, "speechiness": 0.0281, "acousticness": 0.00239, "instrumentalness": 0.000121, "liveness": 0.234, "valence": 0.285, "tempo": 173.372}
+    coldplay_yellow = {"id": "4gzpq5DPGxSnKTe4SA8HAU", "popularity": 86, "duration_ms": 266773, "explicit": 0,
+                       "danceability": 0.429, "energy": 0.661, "key": 11, "loudness": -7.227, "speechiness": 0.0281,
+                       "acousticness": 0.00239, "instrumentalness": 0.000121, "liveness": 0.234, "valence": 0.285,
+                       "tempo": 173.372}
     coldplay_yellow = knn_model.preprocess_data(pd.DataFrame([coldplay_yellow]))
     results = knn_model.predict(coldplay_yellow)
     for i in results.index:
         print(results.loc[i]['name'])
     pass
-
 
 # songs_corr = songs[songs_attrs]
 # songs_corr = songs_corr.set_index("id")
