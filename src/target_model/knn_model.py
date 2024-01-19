@@ -1,6 +1,7 @@
 import pandas as pd
 from sklearn.neighbors import NearestNeighbors
 from sklearn.preprocessing import StandardScaler
+import pickle
 
 songs_attrs_global = [
     "id",
@@ -68,6 +69,31 @@ class KNNModel:
         distances, indices = self.model.kneighbors(song)
         recommended_songs = self.all_songs.iloc[indices[0]]
         return recommended_songs
+    
+    def save_model(self, path):
+        model = pickle.dumps(self.model)
+        scaler = pickle.dumps(self.scaler)
+        model_dict = {
+            "model": model,
+            "scaler": scaler,
+            "attributes_list": self.attributes_list,
+            "index": self.index,
+            "all_songs": self.all_songs,
+            "n": self.n
+        }
+        with open(path, 'wb') as file:
+            pickle.dump(model_dict, file)
+
+    def load_model(self, path):
+        with open(path, 'rb') as file:
+            model_dict = pickle.load(file)
+        self.model = pickle.loads(model_dict["model"])
+        self.scaler = pickle.loads(model_dict["scaler"])
+        self.attributes_list = model_dict["attributes_list"]
+        self.index = model_dict["index"]
+        self.all_songs = model_dict["all_songs"]
+        self.n = model_dict["n"]
+        
 
 
 if __name__ == "__main__":
