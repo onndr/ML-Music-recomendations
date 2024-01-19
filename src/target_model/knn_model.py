@@ -69,7 +69,7 @@ class KNNModel:
         distances, indices = self.model.kneighbors(song)
         recommended_songs = self.all_songs.iloc[indices[0]]
         return recommended_songs
-    
+
     def save_model(self, path):
         model = pickle.dumps(self.model)
         scaler = pickle.dumps(self.scaler)
@@ -93,13 +93,12 @@ class KNNModel:
         self.index = model_dict["index"]
         self.all_songs = model_dict["all_songs"]
         self.n = model_dict["n"]
-        
 
 
 if __name__ == "__main__":
 
     knn_model = KNNModel()
-    songs = knn_model.load_data('data/tracks.jsonl')
+    songs = knn_model.load_data('../../data/tracks.jsonl')
     songs_after_preprocessing = knn_model.fit_data_preprocessor(songs)
     knn_model.fit(songs_after_preprocessing)
     coldplay_yellow = {"id": "4gzpq5DPGxSnKTe4SA8HAU", "popularity": 86, "duration_ms": 266773, "explicit": 0,

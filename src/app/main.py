@@ -1,8 +1,7 @@
 from flask import Flask, request, jsonify
-from surprise import Dataset, Reader, SVD
 import pandas as pd
-from target_model.knn_model import KNNModel
-from base_model.model import MostListenedTracksModel, MostPopularTracksModel
+from src.target_model.knn_model import KNNModel
+from src.base_model.model import MostListenedTracksModel, MostPopularTracksModel
 
 app = Flask(__name__)
 
