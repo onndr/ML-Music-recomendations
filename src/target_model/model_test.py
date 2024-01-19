@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 import pandas as pd
 
@@ -206,8 +207,8 @@ def main_knn(user_id, n):
 
 def count_analytical_measures_and_compare():
     N = 10
-    USER_ID = 1000
-    DATE = pd.Timestamp(datetime(2022, 7, 13, 1, 31, 0))
+    N_FUTURE_SKIPS = 50
+    N_FUTURE_PLAYS = 50
 
     clean_sessions_df = load_data("../../data/sessions_clean.jsonl")
     complete_sessions_df = load_data("../../data/sessions.jsonl")
@@ -218,36 +219,67 @@ def count_analytical_measures_and_compare():
     train_set = model.fit_data_preprocessor(all_songs_df)
     model.fit(train_set, N)
     knn_tester = KNNModelTester(model, clean_sessions_df, complete_sessions_df)
-    prev_songs = knn_tester.get_n_prev_songs_of_user_by_timestamp(USER_ID, N, DATE)
-    songs_with_params = knn_tester.get_songs_params_by_ids(prev_songs)
-    avg_song = KNNModel.avg_song(songs_with_params)
-    knn_pred = list(model.predict(avg_song)['id'])
 
     mpt_model = MostPopularTracksModel()
     mpt_model.load("../base_model/saved_models/most_popular_model.jsonl")
-    mpt_pred = mpt_model.predict(N)
 
     mlt_model = MostListenedTracksModel()
     mlt_model.load("../base_model/saved_models/most_listened_model.jsonl")
-    users_genres = users_df[users_df['user_id'] == USER_ID]['favourite_genres'].tolist()
-    mlt_pred = mlt_model.predict(users_genres, N)
 
-    am_not_skipped_knn = knn_tester.analytical_measure_not_skipped(USER_ID, knn_pred, DATE)
-    am_not_skipped_mpt = knn_tester.analytical_measure_not_skipped(USER_ID, mpt_pred, DATE)
-    am_not_skipped_mlt = knn_tester.analytical_measure_not_skipped(USER_ID, mlt_pred, DATE)
+    knn_metrics = {
+        "am_not_skipped": [],
+        "am_chosen": []
+    }
+    mpt_metrics = {
+        "am_not_skipped": [],
+        "am_chosen": []
+    }
+    mlt_metrics = {
+        "am_not_skipped": [],
+        "am_chosen": []
+    }
+    for i in range(10000):
+        # pick random timestamp from sessions_clean
+        timestamp = clean_sessions_df.sample(1)['timestamp'].iloc[0]
+        for user_id in users_df['user_id']:
+            try:
+                prev_songs = knn_tester.get_n_prev_songs_of_user_by_timestamp(user_id, N, timestamp)
+                songs_with_params = knn_tester.get_songs_params_by_ids(prev_songs)
+                avg_song = KNNModel.avg_song(songs_with_params)
+                if avg_song.empty or avg_song.isnull().values.any():
+                    continue
+                knn_pred = list(model.predict(avg_song)['id'])
 
-    am_chosen_knn = knn_tester.analytical_measure_chosen(USER_ID, knn_pred, DATE)
-    am_chosen_mpt = knn_tester.analytical_measure_chosen(USER_ID, mpt_pred, DATE)
-    am_chosen_mlt = knn_tester.analytical_measure_chosen(USER_ID, mlt_pred, DATE)
+                mpt_pred = mpt_model.predict(N)
 
-    print("Analytical measure not skipped:")
-    print(f"KNN: {am_not_skipped_knn}")
-    print(f"MPT: {am_not_skipped_mpt}")
-    print(f"MLT: {am_not_skipped_mlt}")
-    print("Analytical measure chosen:")
-    print(f"KNN: {am_chosen_knn}")
-    print(f"MPT: {am_chosen_mpt}")
-    print(f"MLT: {am_chosen_mlt}")
+                users_genres = users_df[users_df['user_id'] == user_id]['favourite_genres'].tolist()
+                mlt_pred = mlt_model.predict(users_genres, N)
+
+                am_not_skipped_knn = knn_tester.analytical_measure_not_skipped(user_id, knn_pred, timestamp)
+                am_not_skipped_mpt = knn_tester.analytical_measure_not_skipped(user_id, mpt_pred, timestamp)
+                am_not_skipped_mlt = knn_tester.analytical_measure_not_skipped(user_id, mlt_pred, timestamp)
+
+                am_chosen_knn = knn_tester.analytical_measure_chosen(user_id, knn_pred, timestamp)
+                am_chosen_mpt = knn_tester.analytical_measure_chosen(user_id, mpt_pred, timestamp)
+                am_chosen_mlt = knn_tester.analytical_measure_chosen(user_id, mlt_pred, timestamp)
+            except Exception as e:
+                print(e)
+                continue
+
+            knn_metrics["am_not_skipped"].append(am_not_skipped_knn)
+            knn_metrics["am_chosen"].append(am_chosen_knn)
+            mpt_metrics["am_not_skipped"].append(am_not_skipped_mpt)
+            mpt_metrics["am_chosen"].append(am_chosen_mpt)
+            mlt_metrics["am_not_skipped"].append(am_not_skipped_mlt)
+            mlt_metrics["am_chosen"].append(am_chosen_mlt)
+
+        # write results to files
+        with open("knn_metrics.json", "w") as f:
+            json.dump(knn_metrics, f)
+        with open("mpt_metrics.json", "w") as f:
+            json.dump(mpt_metrics, f)
+        with open("mlt_metrics.json", "w") as f:
+            json.dump(mlt_metrics, f)
 
 
 if __name__ == '__main__':
