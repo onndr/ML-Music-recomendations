@@ -32,6 +32,8 @@ class KNNModelTester:
         common_songs = set1.intersection(set2)
         n = len(common_songs)
         s = len(set1)
+        if n/s > 0:
+            pass
         return n/s
 
     def test(self, user_id, timestamp, k_prev_songs=10):
@@ -45,10 +47,32 @@ class KNNModelTester:
 
         return self.accuracy(predicted_songs_ids, after_songs_ids)
 
+    def test_by_user(self, user_id, k_prev_songs=10):
+        user_songs = self.all_sessions_df[self.all_sessions_df['user_id'] == user_id]
+        user_songs = user_songs.sort_values(by=['timestamp'], ascending=True)
+        user_songs_ids = list(user_songs['track_id'])
+        user_songs_timestamps = list(user_songs['timestamp'])
+        accuracies = []
+        for i in range(k_prev_songs, len(user_songs_ids)-self.model.n):
+            before_songs_ids = user_songs_ids[i-k_prev_songs:i]
+            after_songs_ids = user_songs_ids[i:i+self.model.n]
+            before_songs = self.get_songs_params_by_ids(before_songs_ids)
+            input_avg_before_songs = KNNModel.avg_song(before_songs)
+            predicted_songs_ids = list(self.model.predict(input_avg_before_songs)['id'])
+            accuracies.append(self.accuracy(predicted_songs_ids, after_songs_ids))
+        return accuracies
+
+    def test_all_users(self, k_prev_songs=10):
+        all_users = list(self.all_sessions_df['user_id'].unique())
+        accuracies = []
+        for user_id in all_users:
+            accuracies.append(self.test_by_user(user_id, k_prev_songs))
+        return accuracies
+
 
 def main():
     N = 10
-    USER_ID = 101
+    USER_ID = 1000
     DATE = pd.Timestamp(datetime(2022, 7, 13, 1, 31, 0))
 
     all_songs_df = load_data("../../data/tracks.jsonl")
@@ -58,7 +82,8 @@ def main():
     model.fit(train_set, N)
 
     tester = KNNModelTester(model, load_data("../../data/sessions_clean.jsonl"))
-    print("test accuracy: ", tester.test(USER_ID, DATE))
+    preds = tester.test_by_user(USER_ID, 20)
+    print(f"how good is the model for the user with id {USER_ID}: ", len([i for i in preds if i > 0])/len(preds))
 
 
 if __name__ == '__main__':
