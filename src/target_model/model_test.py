@@ -204,10 +204,57 @@ def main_knn(user_id, n):
     print(f"KNN result: ", len(non_zero_results)/len(results))
 
 
-if __name__ == '__main__':
+def count_analytical_measures_and_compare():
     N = 10
     USER_ID = 1000
     DATE = pd.Timestamp(datetime(2022, 7, 13, 1, 31, 0))
-    test_mlt(USER_ID, N)
-    test_mpt(USER_ID, N)
+
+    clean_sessions_df = load_data("../../data/sessions_clean.jsonl")
+    complete_sessions_df = load_data("../../data/sessions.jsonl")
+    all_songs_df = load_data("../../data/tracks.jsonl")
+    users_df = load_data("../../data/users.jsonl")
+
+    model = KNNModel()
+    train_set = model.fit_data_preprocessor(all_songs_df)
+    model.fit(train_set, N)
+    knn_tester = KNNModelTester(model, clean_sessions_df, complete_sessions_df)
+    prev_songs = knn_tester.get_n_prev_songs_of_user_by_timestamp(USER_ID, N, DATE)
+    songs_with_params = knn_tester.get_songs_params_by_ids(prev_songs)
+    avg_song = KNNModel.avg_song(songs_with_params)
+    knn_pred = list(model.predict(avg_song)['id'])
+
+    mpt_model = MostPopularTracksModel()
+    mpt_model.load("../base_model/saved_models/most_popular_model.jsonl")
+    mpt_pred = mpt_model.predict(N)
+
+    mlt_model = MostListenedTracksModel()
+    mlt_model.load("../base_model/saved_models/most_listened_model.jsonl")
+    users_genres = users_df[users_df['user_id'] == USER_ID]['favourite_genres'].tolist()
+    mlt_pred = mlt_model.predict(users_genres, N)
+
+    am_not_skipped_knn = knn_tester.analytical_measure_not_skipped(USER_ID, knn_pred, DATE)
+    am_not_skipped_mpt = knn_tester.analytical_measure_not_skipped(USER_ID, mpt_pred, DATE)
+    am_not_skipped_mlt = knn_tester.analytical_measure_not_skipped(USER_ID, mlt_pred, DATE)
+
+    am_chosen_knn = knn_tester.analytical_measure_chosen(USER_ID, knn_pred, DATE)
+    am_chosen_mpt = knn_tester.analytical_measure_chosen(USER_ID, mpt_pred, DATE)
+    am_chosen_mlt = knn_tester.analytical_measure_chosen(USER_ID, mlt_pred, DATE)
+
+    print("Analytical measure not skipped:")
+    print(f"KNN: {am_not_skipped_knn}")
+    print(f"MPT: {am_not_skipped_mpt}")
+    print(f"MLT: {am_not_skipped_mlt}")
+    print("Analytical measure chosen:")
+    print(f"KNN: {am_chosen_knn}")
+    print(f"MPT: {am_chosen_mpt}")
+    print(f"MLT: {am_chosen_mlt}")
+
+
+if __name__ == '__main__':
+    # N = 10
+    # USER_ID = 1000
+    # DATE = pd.Timestamp(datetime(2022, 7, 13, 1, 31, 0))
+    # test_mlt(USER_ID, N)
+    # test_mpt(USER_ID, N)
     # main_knn(USER_ID, N)
+    count_analytical_measures_and_compare()
