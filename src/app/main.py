@@ -10,17 +10,17 @@ model_popular = MostPopularTracksModel()
 model_most_listened = MostListenedTracksModel()
 
 try:
-    model_knn = model_knn.load_model('knn_model.pkl')
+    model_knn.load_model('models/knn_model.pkl')
 except:
     pass
 
 try:
-    model_popular = model_popular.load('most_popular_model.jsonl')
+    model_popular.load('models/most_popular_model.jsonl')
 except:
     pass
 
 try:
-    model_most_listened = model_most_listened.load('most_listened_model.jsonl')
+    model_most_listened.load('models/most_listened_model.jsonl')
 except:
     pass
 
@@ -35,14 +35,12 @@ def make_a_ids_list(df):
 @app.route('/predict/knn', methods=['POST'])
 def predict_knn():
     try:
-        # Get user ID and songs from the request
         songs = request.json['songs']
-        songs = pd.DataFrame(songs)
-        merged_song = model_knn.avg_song(songs)
-        # Make predictions
+        songs_df = pd.DataFrame(songs)
+        songs_preprocessed = model_knn.preprocess_data(songs_df)
+        merged_song = model_knn.avg_song(songs_preprocessed)
         predictions = model_knn.predict(merged_song)
 
-        # Return the top N recommendations
         return jsonify({'recommendations': make_a_ids_list(predictions)})
 
     except Exception as e:
@@ -51,24 +49,21 @@ def predict_knn():
 
 @app.route('/predict/popular', methods=['POST'])
 def predict_popular():
-    # try:
+    try:
         predictions = model_popular.predict(10)
 
-        return jsonify({'recommendations': make_a_ids_list(predictions)})
+        return jsonify({'recommendations': predictions})
 
-    # except Exception as e:
-    #     return jsonify({'error': str(e)})
+    except Exception as e:
+        return jsonify({'error': str(e)})
 
 
 @app.route('/predict/most_listened', methods=['POST'])
 def predict_most_listened():
     try:
-        # Get user ID and songs from the request
         genres = request.json['genres']
-        # Make predictions
         predictions = model_most_listened.predict(genres)
-        # Return the top N recommendations
-        return jsonify({'recommendations': make_a_ids_list(predictions)})
+        return jsonify({'recommendations': predictions})
 
     except Exception as e:
         return jsonify({'error': str(e)})
@@ -79,7 +74,6 @@ def train_knn():
     try:
         songs = request.json['songs']
         songs = pd.DataFrame(songs)
-        # Make predictions
         preprocessed_songs = model_knn.fit_data_preprocessor(songs)
         model_knn.fit(preprocessed_songs)
         return
@@ -93,7 +87,6 @@ def train_popular():
     try:
         songs = request.json['songs']
         songs = pd.DataFrame(songs)
-        # Make predictions
         model_popular.train(songs, 10)
         return
 
@@ -131,16 +124,16 @@ def save_most_listened():
 @app.route('/predict/abc', methods=['POST'])
 def predict_abc():
     try:
-        # Get user ID and songs from the request
         genres = request.json['genres']
         songs = request.json['songs']
-        songs = pd.DataFrame(songs)
-        merged_song = model_knn.avg_song(songs)
+        songs_df = pd.DataFrame(songs)
+        songs_preprocessed = model_knn.preprocess_data(songs_df)
+        merged_song = model_knn.avg_song(songs_preprocessed)
         knn_predictions = model_knn.predict(merged_song)
         results = {
-            'knn_predictions': make_a_ids_list(knn_predictions),
-            'popular_predictions': make_a_ids_list(model_popular.predict(10)),
-            'listened_predictions': make_a_ids_list(model_most_listened.predict(genres))
+            'knn_recommendations': make_a_ids_list(knn_predictions),
+            'popular_recommendations': model_popular.predict(10),
+            'listened_recommendations': model_most_listened.predict(genres)
         }
 
         return jsonify(results)

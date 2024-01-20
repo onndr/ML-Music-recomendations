@@ -55,13 +55,15 @@ class KNNModel:
             raise Exception("Data preprocessor not fitted")
         songs_df = songs_df[self.attributes_list]
         songs_df = songs_df.set_index(self.index)
-        return self.scaler.transform(songs_df)
+        return pd.DataFrame(self.scaler.transform(songs_df))
 
     def load_data(self, path: str):
         return pd.read_json(path, lines=True)
 
-    def avg_song(songs: pd.DataFrame):
-        return songs.mean(numeric_only=True).to_frame().transpose()
+    def avg_song(self, songs_df: pd.DataFrame):
+        if len(songs_df) == 1:
+            return songs_df
+        return songs_df.mean(numeric_only=True).to_frame().transpose()
 
     def predict(self, song: pd.DataFrame):
         if not self.model:
@@ -105,7 +107,13 @@ if __name__ == "__main__":
                        "danceability": 0.429, "energy": 0.661, "key": 11, "loudness": -7.227, "speechiness": 0.0281,
                        "acousticness": 0.00239, "instrumentalness": 0.000121, "liveness": 0.234, "valence": 0.285,
                        "tempo": 173.372}
-    coldplay_yellow = knn_model.preprocess_data(pd.DataFrame([coldplay_yellow]))
+    coldplay_trouble = {"id": "0R8P9KfGJCDULmlEoBagcO", "name": "Trouble", "popularity": 72, "duration_ms": 273427, "explicit": 0,
+     "id_artist": "4gzpq5DPGxSnKTe4SA8HAU", "release_date": "2000-07-10", "danceability": 0.565, "energy": 0.546,
+     "key": 11, "loudness": -7.496, "speechiness": 0.0314, "acousticness": 0.189, "instrumentalness": 0.0015,
+     "liveness": 0.17, "valence": 0.195, "tempo": 139.757}
+
+    coldplay_yellow = knn_model.preprocess_data(pd.DataFrame([coldplay_yellow, coldplay_trouble]))
+    coldplay_yellow = knn_model.avg_song(coldplay_yellow)
     results = knn_model.predict(coldplay_yellow)
     for i in results.index:
         print(results.loc[i]['name'])
