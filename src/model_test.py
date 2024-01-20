@@ -228,21 +228,21 @@ def count_analytical_measures_and_compare(iters, n_songs_to_predict, n_future_sk
     start = time.time()
     model.fit(train_set, n_songs_to_predict)
     end = time.time()
-    times["knn_train"] = "%.2f" % (end - start)
+    times["knn_train"] = end - start
     knn_tester = KNNModelTester(model, clean_sessions_df, complete_sessions_df)
 
     mpt_model = MostPopularTracksModel()
     start = time.time()
     mpt_model.train(all_songs_df)
     end = time.time()
-    times["mpt_train"] = "%.2f" % (end - start)
+    times["mpt_train"] = end - start
     # mpt_model.load("../base_model/saved_models/most_popular_model.jsonl")
 
     mlt_model = MostListenedTracksModel()
     start = time.time()
     mlt_model.train(users_df, clean_sessions_df)
     end = time.time()
-    times["mlt_train"] = "%.2f" % (end - start)
+    times["mlt_train"] = end - start
     # mlt_model.load("../base_model/saved_models/most_listened_model.jsonl")
 
     knn_metrics = {
@@ -305,17 +305,15 @@ def count_analytical_measures_and_compare(iters, n_songs_to_predict, n_future_sk
             mlt_metrics["am_not_skipped"].append(am_not_skipped_mlt)
             mlt_metrics["am_chosen"].append(am_chosen_mlt)
 
-    times["knn_predict"] = "%.2f" % (sum(times["knn_predict"]) / len(times["knn_predict"]))
-    times["mpt_predict"] = "%.2f" % (sum(times["mpt_predict"]) / len(times["mpt_predict"]))
-    times["mlt_predict"] = "%.2f" % (sum(times["mlt_predict"]) / len(times["mlt_predict"]))
-
-    print(times)
+    times["knn_predict"] = sum(times["knn_predict"]) / len(times["knn_predict"])
+    times["mpt_predict"] = sum(times["mpt_predict"]) / len(times["mpt_predict"])
+    times["mlt_predict"] = sum(times["mlt_predict"]) / len(times["mlt_predict"])
 
     return knn_metrics, mpt_metrics, mlt_metrics, times
 
 
 if __name__ == '__main__':
-    iters = 100
+    iters = 1
     n_songs_to_predict = 10
     # those are params for analytical measures
     n_future_skips = 30
@@ -344,3 +342,5 @@ if __name__ == '__main__':
     print("MPT KA2: ", "%.3f" % avg_mpt_chosen, "%")
     print("MLT KA1: ", "%.3f" % avg_mlt_not_skipped, "%")
     print("MLT KA2: ", "%.3f" % avg_mlt_chosen, "%")
+
+    print(times)
