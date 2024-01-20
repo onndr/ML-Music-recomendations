@@ -1,4 +1,6 @@
 import json
+import time
+
 import pandas as pd
 
 from src.base_model.model import MostPopularTracksModel, MostListenedTracksModel
@@ -205,22 +207,41 @@ def main_knn(user_id, n):
 
 
 def count_analytical_measures_and_compare(iters, n_songs_to_predict, n_future_skips, n_future_plays):
-
     clean_sessions_df = load_data("../data/sessions_clean.jsonl")
     complete_sessions_df = load_data("../data/sessions.jsonl")
     all_songs_df = load_data("../data/tracks.jsonl")
     users_df = load_data("../data/users.jsonl")
 
+    times = {
+        "knn_train": None,
+        "knn_predict": [],
+        "mpt_train": None,
+        "mpt_predict": [],
+        "mlt_train": None,
+        "mlt_predict": []
+    }
+
     model = KNNModel()
     train_set = model.fit_data_preprocessor(all_songs_df)
+    start = time.time()
     model.fit(train_set, n_songs_to_predict)
+    end = time.time()
+    times["knn_train"] = "%.2f" % (end - start)
     knn_tester = KNNModelTester(model, clean_sessions_df, complete_sessions_df)
 
     mpt_model = MostPopularTracksModel()
-    mpt_model.load("../base_model/saved_models/most_popular_model.jsonl")
+    start = time.time()
+    mpt_model.train(all_songs_df)
+    end = time.time()
+    times["mpt_train"] = "%.2f" % (end - start)
+    # mpt_model.load("../base_model/saved_models/most_popular_model.jsonl")
 
     mlt_model = MostListenedTracksModel()
-    mlt_model.load("../base_model/saved_models/most_listened_model.jsonl")
+    start = time.time()
+    mlt_model.train(users_df, clean_sessions_df)
+    end = time.time()
+    times["mlt_train"] = "%.2f" % (end - start)
+    # mlt_model.load("../base_model/saved_models/most_listened_model.jsonl")
 
     knn_metrics = {
         "am_not_skipped": [],
@@ -244,12 +265,22 @@ def count_analytical_measures_and_compare(iters, n_songs_to_predict, n_future_sk
                 avg_song = KNNModel.avg_song(songs_with_params)
                 if avg_song.empty or avg_song.isnull().values.any():
                     continue
-                knn_pred = list(model.predict(avg_song)['id'])
 
+                start = time.time()
+                knn_pred = list(model.predict(avg_song)['id'])
+                end = time.time()
+                times["knn_predict"].append(end - start)
+
+                start = time.time()
                 mpt_pred = mpt_model.predict(n_songs_to_predict)
+                end = time.time()
+                times["mpt_predict"].append(end - start)
 
                 users_genres = users_df[users_df['user_id'] == user_id]['favourite_genres'].tolist()
+                start = time.time()
                 mlt_pred = mlt_model.predict(users_genres, n_songs_to_predict)
+                end = time.time()
+                times["mlt_predict"].append(end - start)
 
                 am_not_skipped_knn = knn_tester.analytical_measure_not_skipped(user_id, knn_pred, timestamp, n_future_skips)
                 am_not_skipped_mpt = knn_tester.analytical_measure_not_skipped(user_id, mpt_pred, timestamp, n_future_skips)
@@ -269,9 +300,13 @@ def count_analytical_measures_and_compare(iters, n_songs_to_predict, n_future_sk
             mlt_metrics["am_not_skipped"].append(am_not_skipped_mlt)
             mlt_metrics["am_chosen"].append(am_chosen_mlt)
 
-        return knn_metrics, mpt_metrics, mlt_metrics
+    times["knn_predict"] = "%.2f" % (sum(times["knn_predict"])/len(times["knn_predict"]))
+    times["mpt_predict"] = "%.2f" % (sum(times["mpt_predict"])/len(times["mpt_predict"]))
+    times["mlt_predict"] = "%.2f" % (sum(times["mlt_predict"])/len(times["mlt_predict"]))
 
+    print(times)
 
+    return knn_metrics, mpt_metrics, mlt_metrics, times
 
 
 if __name__ == '__main__':
@@ -280,7 +315,9 @@ if __name__ == '__main__':
     # those are params for analytical measures
     n_future_skips = 30
     n_future_plays = 30
-    knn_metrics, mpt_metrics, mlt_metrics = count_analytical_measures_and_compare(iters, n_songs_to_predict, n_future_skips, n_future_plays)
+
+
+    knn_metrics, mpt_metrics, mlt_metrics, times = count_analytical_measures_and_compare(iters, n_songs_to_predict, n_future_skips, n_future_plays)
 
     # write results to files
     with open("target_model/knn_metrics.json", "w") as f:
